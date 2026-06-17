@@ -8,7 +8,7 @@ export async function revalidateBlog(slug?: string): Promise<void> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-revalidate-secret": process.env.NEXT_PUBLIC_REVALIDATE_SECRET ?? "",
+        "x-revalidate-secret": process.env.REVALIDATE_SECRET ?? "",
       },
       body: JSON.stringify({ slug }),
     });

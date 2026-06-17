@@ -1,8 +1,13 @@
+"use client";
+
+import DOMPurify from "dompurify";
+
 interface PostContentProps {
   content: string;
 }
 
 export function PostContent({ content }: PostContentProps) {
+  const clean = DOMPurify.sanitize(content);
   return (
     <div
       className="prose prose-neutral max-w-none

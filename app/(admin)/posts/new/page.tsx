@@ -7,6 +7,7 @@ import { createPost } from "@/lib/firebase/firestore";
 import { generateExcerpt } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import type { PostFormValues } from "@/lib/validations";
+import { revalidateBlog } from "@/lib/revalidate";
 
 export default function NewPostPage() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export default function NewPostPage() {
         authorName:
           user.displayName ?? user.email?.split("@")[0] ?? "Anonymous",
       });
+      await revalidateBlog(values.slug);
       router.push("/posts");
     } finally {
       setIsSubmitting(false);

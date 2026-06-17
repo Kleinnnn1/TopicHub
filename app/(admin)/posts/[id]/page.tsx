@@ -7,6 +7,7 @@ import { usePost } from "@/hooks/usePost";
 import { updatePost } from "@/lib/firebase/firestore";
 import { Spinner } from "@/components/ui/Spinner";
 import type { PostFormValues } from "@/lib/validations";
+import { revalidateBlog } from "@/lib/revalidate";
 
 export default function EditPostPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +23,7 @@ export default function EditPostPage() {
     setIsSubmitting(true);
     try {
       await updatePost(id, values);
+      await revalidateBlog(values.slug);
       router.push("/posts");
     } finally {
       setIsSubmitting(false);

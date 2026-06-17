@@ -8,6 +8,7 @@ import { slugify, generateExcerpt, stripHtml } from "@/lib/utils";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Spinner } from "@/components/ui/Spinner";
 import type { Post } from "@/types";
+import { TiptapEditor } from "../editor/TiptapEditor";
 
 interface PostFormProps {
   initialData?: Post;
@@ -225,16 +226,21 @@ export function PostForm({
           >
             Content
           </label>
-          <textarea
-            id="content"
-            placeholder="Write your post content here..."
-            rows={16}
-            {...register("content")}
-            className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-y font-mono"
-          />
-          {errors.content && (
-            <p className="text-xs text-red-500">{errors.content.message}</p>
-          )}
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-neutral-700">
+              Content
+            </label>
+            <Controller
+              name="content"
+              control={control}
+              render={({ field }) => (
+                <TiptapEditor value={field.value} onChange={field.onChange} />
+              )}
+            />
+            {errors.content && (
+              <p className="text-xs text-red-500">{errors.content.message}</p>
+            )}
+          </div>
         </div>
 
         {/* Excerpt */}
