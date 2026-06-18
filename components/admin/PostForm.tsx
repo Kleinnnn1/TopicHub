@@ -8,12 +8,13 @@ import { slugify, generateExcerpt } from "@/lib/utils";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Spinner } from "@/components/ui/Spinner";
 import { TiptapEditor } from "@/components/editor/TiptapEditor";
+import { ImageUpload } from "@/components/admin/ImageUpload";
 import { isSlugTaken } from "@/lib/firebase/firestore";
 import type { Post } from "@/types";
 
 interface PostFormProps {
   initialData?: Post;
-  onSubmit: (values: PostFormValues) => Promise<void>; // fixed: removed status param
+  onSubmit: (values: PostFormValues) => Promise<void>;
   isSubmitting: boolean;
 }
 
@@ -95,7 +96,6 @@ export function PostForm({
     );
   }
 
-  // Slug check + status injection happen here, before calling parent's onSubmit
   async function handleSaveAsDraft(data: PostFormValues) {
     const taken = await isSlugTaken(data.slug, initialData?.id);
     if (taken) {
@@ -206,25 +206,15 @@ export function PostForm({
 
         {/* Cover Image */}
         <div className="space-y-1.5">
-          <label
-            htmlFor="coverImage"
-            className="block text-sm font-medium text-neutral-700"
-          >
-            Cover Image URL{" "}
+          <label className="block text-sm font-medium text-neutral-700">
+            Cover Image{" "}
             <span className="font-normal text-neutral-400">(optional)</span>
           </label>
           <Controller
             name="coverImage"
             control={control}
             render={({ field }) => (
-              <input
-                id="coverImage"
-                type="url"
-                placeholder="https://..."
-                value={field.value ?? ""}
-                onChange={(e) => field.onChange(e.target.value || null)}
-                className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
+              <ImageUpload value={field.value} onChange={field.onChange} />
             )}
           />
           {errors.coverImage && (
@@ -232,7 +222,7 @@ export function PostForm({
           )}
         </div>
 
-        {/* Content — Tiptap editor replaces textarea */}
+        {/* Content */}
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-neutral-700">
             Content
