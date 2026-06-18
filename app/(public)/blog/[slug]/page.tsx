@@ -1,80 +1,78 @@
-"use client";
-
-import Link from "next/link";
-import { use } from "react";
 import { notFound } from "next/navigation";
-import { useEffect, useState } from "react";
-import { getPostBySlug } from "@/lib/firebase/firestore";
+import {
+  getPostBySlugServer,
+  getPublishedPostsServer,
+  getUserProfileServer,
+} from "@/lib/firebase/firestore.server";
 import { PostContent } from "@/components/blog/PostContent";
-import { Spinner } from "@/components/ui/Spinner";
-import { formatDate } from "@/lib/utils";
-import type { Post } from "@/types";
 
-export default function BlogPostPage({
+export const revalidate = 60;
+
+// Pre-render all published slugs at build time
+export async function generateStaticParams() {
+  const posts = await getPublishedPostsServer();
+  return posts.map((p) => ({ slug: p.slug }));
+}
+
+export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ slug: string }>;
+  params: { slug: string };
 }) {
-  const { slug } = use(params);
-  const [post, setPost] = useState<Post | null>(null);
-  const [loading, setLoading] = useState(true);
+  const post = await getPostBySlugServer(params.slug);
+  if (!post) return {};
+  return {
+    title: `${post.title} | TopicHub`,
+    description: post.excerpt,
+  };
+}
 
-  useEffect(() => {
-    getPostBySlug(slug).then((data) => {
-      setPost(data);
-      setLoading(false);
-    });
-  }, [slug]);
+export default async function PostPage({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const post = await getPostBySlugServer(params.slug);
+  if (!post) notFound();
 
-  if (loading)
-    return (
-      <div className="flex justify-center py-16">
-        <Spinner />
-      </div>
-    );
-  if (!post) return notFound();
+  const author = await getUserProfileServer(post.authorId);
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-16">
-      <div className="mb-10 space-y-4">
-        {post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {post.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-        <h1 className="font-display text-4xl font-bold text-neutral-900">
+    <article className="mx-auto max-w-3xl px-4 py-12">
+      {post.coverImage && (
+        <img
+          src={post.coverImage}
+          alt={post.title}
+          className="w-full rounded-xl object-cover mb-8 max-h-96"
+        />
+      )}
+      <header className="mb-8">
+        <div className="flex flex-wrap gap-2 mb-3">
+          {post.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+        <h1 className="font-display text-4xl font-bold text-neutral-900 mb-4">
           {post.title}
         </h1>
-        {post.excerpt && (
-          <p className="text-lg text-neutral-500">{post.excerpt}</p>
-        )}
-        <p className="text-sm text-neutral-400">
-          By{" "}
-          <Link
-            href={`/about/${post.authorId}`}
-            className="font-medium text-neutral-600 hover:text-blue-600 hover:underline"
-          >
-            {post.authorName}
-          </Link>
-          {" · "}
-          {formatDate(post.createdAt)}
-        </p>
-        {post.coverImage && (
-          <img
-            src={post.coverImage}
-            alt={post.title}
-            className="w-full rounded-xl object-cover"
-          />
-        )}
-      </div>
+        <div className="flex items-center gap-3 text-sm text-neutral-500">
+          <span>{author?.displayName ?? post.authorName}</span>
+          <span>·</span>
+          <time dateTime={post.createdAt}>
+            {new Date(post.createdAt).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </time>
+        </div>
+      </header>
       <PostContent content={post.content} />
-    </div>
+    </article>
   );
 }
