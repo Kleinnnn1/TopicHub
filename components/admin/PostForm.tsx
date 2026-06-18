@@ -4,18 +4,16 @@ import { useEffect } from "react";
 import { useForm, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { postSchema, type PostFormValues } from "@/lib/validations";
-import { slugify, generateExcerpt, stripHtml } from "@/lib/utils";
+import { slugify, generateExcerpt } from "@/lib/utils";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Spinner } from "@/components/ui/Spinner";
+import { TiptapEditor } from "@/components/editor/TiptapEditor";
+import { isSlugTaken } from "@/lib/firebase/firestore";
 import type { Post } from "@/types";
-import { TiptapEditor } from "../editor/TiptapEditor";
 
 interface PostFormProps {
   initialData?: Post;
-  onSubmit: (
-    values: PostFormValues,
-    status: "draft" | "published",
-  ) => Promise<void>;
+  onSubmit: (values: PostFormValues) => Promise<void>; // fixed: removed status param
   isSubmitting: boolean;
 }
 
@@ -32,6 +30,7 @@ export function PostForm({
     watch,
     setValue,
     control,
+    setError,
     formState: { errors },
   } = useForm<PostFormValues>({
     resolver: zodResolver(postSchema) as Resolver<PostFormValues>,
@@ -96,12 +95,27 @@ export function PostForm({
     );
   }
 
+  // Slug check + status injection happen here, before calling parent's onSubmit
   async function handleSaveAsDraft(data: PostFormValues) {
-    await onSubmit({ ...data, status: "draft" }, "draft");
+    const taken = await isSlugTaken(data.slug, initialData?.id);
+    if (taken) {
+      setError("slug", {
+        message: "This slug is already in use. Choose another.",
+      });
+      return;
+    }
+    await onSubmit({ ...data, status: "draft" });
   }
 
   async function handlePublish(data: PostFormValues) {
-    await onSubmit({ ...data, status: "published" }, "published");
+    const taken = await isSlugTaken(data.slug, initialData?.id);
+    if (taken) {
+      setError("slug", {
+        message: "This slug is already in use. Choose another.",
+      });
+      return;
+    }
+    await onSubmit({ ...data, status: "published" });
   }
 
   return (
@@ -190,14 +204,14 @@ export function PostForm({
           )}
         </div>
 
-        {/* Cover image */}
+        {/* Cover Image */}
         <div className="space-y-1.5">
           <label
             htmlFor="coverImage"
             className="block text-sm font-medium text-neutral-700"
           >
             Cover Image URL{" "}
-            <span className="text-neutral-400 font-normal">(optional)</span>
+            <span className="font-normal text-neutral-400">(optional)</span>
           </label>
           <Controller
             name="coverImage"
@@ -218,29 +232,21 @@ export function PostForm({
           )}
         </div>
 
-        {/* Content */}
+        {/* Content — Tiptap editor replaces textarea */}
         <div className="space-y-1.5">
-          <label
-            htmlFor="content"
-            className="block text-sm font-medium text-neutral-700"
-          >
+          <label className="block text-sm font-medium text-neutral-700">
             Content
           </label>
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-neutral-700">
-              Content
-            </label>
-            <Controller
-              name="content"
-              control={control}
-              render={({ field }) => (
-                <TiptapEditor value={field.value} onChange={field.onChange} />
-              )}
-            />
-            {errors.content && (
-              <p className="text-xs text-red-500">{errors.content.message}</p>
+          <Controller
+            name="content"
+            control={control}
+            render={({ field }) => (
+              <TiptapEditor value={field.value} onChange={field.onChange} />
             )}
-          </div>
+          />
+          {errors.content && (
+            <p className="text-xs text-red-500">{errors.content.message}</p>
+          )}
         </div>
 
         {/* Excerpt */}
@@ -250,7 +256,7 @@ export function PostForm({
             className="block text-sm font-medium text-neutral-700"
           >
             Excerpt{" "}
-            <span className="text-neutral-400 font-normal">
+            <span className="font-normal text-neutral-400">
               (auto-generated if left empty)
             </span>
           </label>
@@ -259,7 +265,7 @@ export function PostForm({
             placeholder="Short description of the post..."
             rows={3}
             {...register("excerpt")}
-            className="w-full rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 resize-none"
+            className="w-full resize-none rounded-lg border border-neutral-200 px-3 py-2.5 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
           {errors.excerpt && (
             <p className="text-xs text-red-500">{errors.excerpt.message}</p>
@@ -273,7 +279,7 @@ export function PostForm({
             className="block text-sm font-medium text-neutral-700"
           >
             Tags{" "}
-            <span className="text-neutral-400 font-normal">
+            <span className="font-normal text-neutral-400">
               (press Enter or comma to add)
             </span>
           </label>
@@ -302,7 +308,7 @@ export function PostForm({
                   tagsValue.length === 0 ? "react, nextjs, typescript…" : ""
                 }
                 onKeyDown={handleTagKeyDown}
-                className="flex-1 min-w-30 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
+                className="min-w-30 flex-1 text-sm text-neutral-900 placeholder:text-neutral-400 focus:outline-none"
               />
             </div>
           </div>

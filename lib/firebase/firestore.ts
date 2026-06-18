@@ -134,6 +134,19 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   };
 }
 
+export async function isSlugTaken(
+  slug: string,
+  excludeId?: string,
+): Promise<boolean> {
+  const q = query(collection(db, "posts"), where("slug", "==", slug));
+  const snapshot = await getDocs(q);
+  if (snapshot.empty) return false;
+  if (excludeId) {
+    return snapshot.docs.some((doc) => doc.id !== excludeId);
+  }
+  return true;
+}
+
 export async function upsertUserProfile(
   uid: string,
   data: Partial<Omit<UserProfile, "uid" | "createdAt">>,
