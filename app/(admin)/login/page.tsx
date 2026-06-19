@@ -7,12 +7,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
+  signOut,
   GoogleAuthProvider,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase/config";
 import { loginSchema, type LoginFormValues } from "@/lib/validations";
 
 const googleProvider = new GoogleAuthProvider();
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,6 +35,12 @@ export default function LoginPage() {
 
   async function onSubmit(values: LoginFormValues) {
     setAuthError(null);
+
+    if (values.email.toLowerCase() !== ADMIN_EMAIL?.toLowerCase()) {
+      setAuthError("This account is not authorized to access the admin panel.");
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
       router.push("/dashboard");
@@ -45,7 +53,17 @@ export default function LoginPage() {
     setAuthError(null);
     setGoogleLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithPopup(auth, googleProvider);
+      const email = result.user.email?.toLowerCase();
+
+      if (email !== ADMIN_EMAIL?.toLowerCase()) {
+        await signOut(auth);
+        setAuthError(
+          "This account is not authorized to access the admin panel.",
+        );
+        return;
+      }
+
       router.push("/dashboard");
     } catch {
       setAuthError("Google sign-in failed. Please try again.");
