@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Spinner } from "@/components/ui/Spinner";
 import { TiptapEditor } from "@/components/editor/TiptapEditor";
 import { ImageUpload } from "@/components/admin/ImageUpload";
-import { isSlugTaken } from "@/lib/firebase/firestore";
+import { checkSlugTaken } from "@/lib/actions";
 import type { Post } from "@/types";
 
 interface PostFormProps {
@@ -97,7 +97,7 @@ export function PostForm({
   }
 
   async function handleSaveAsDraft(data: PostFormValues) {
-    const taken = await isSlugTaken(data.slug, initialData?.id);
+    const taken = await checkSlugTaken(data.slug, initialData?.id);
     if (taken) {
       setError("slug", {
         message: "This slug is already in use. Choose another.",
@@ -108,7 +108,7 @@ export function PostForm({
   }
 
   async function handlePublish(data: PostFormValues) {
-    const taken = await isSlugTaken(data.slug, initialData?.id);
+    const taken = await checkSlugTaken(data.slug, initialData?.id);
     if (taken) {
       setError("slug", {
         message: "This slug is already in use. Choose another.",
