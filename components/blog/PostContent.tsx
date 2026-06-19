@@ -1,6 +1,4 @@
-"use client";
-
-import DOMPurify from "dompurify";
+import DOMPurify from "isomorphic-dompurify";
 
 interface PostContentProps {
   content: string;
@@ -8,6 +6,7 @@ interface PostContentProps {
 
 export function PostContent({ content }: PostContentProps) {
   const clean = DOMPurify.sanitize(content);
+
   return (
     <div
       className="prose prose-neutral max-w-none
@@ -38,7 +37,7 @@ export function PostContent({ content }: PostContentProps) {
         prose-blockquote:text-neutral-600
         prose-img:rounded-xl
         prose-hr:border-neutral-200"
-      dangerouslySetInnerHTML={{ __html: content }}
+      dangerouslySetInnerHTML={{ __html: clean }}
     />
   );
 }
