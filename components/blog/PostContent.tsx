@@ -1,11 +1,18 @@
-import DOMPurify from "isomorphic-dompurify";
+import sanitizeHtml from "sanitize-html";
 
 interface PostContentProps {
   content: string;
 }
 
 export function PostContent({ content }: PostContentProps) {
-  const clean = DOMPurify.sanitize(content);
+  const clean = sanitizeHtml(content, {
+    allowedTags: sanitizeHtml.defaults.allowedTags.concat(["img", "h1", "h2"]),
+    allowedAttributes: {
+      ...sanitizeHtml.defaults.allowedAttributes,
+      img: ["src", "alt"],
+      a: ["href", "name", "target", "rel"],
+    },
+  });
 
   return (
     <div
