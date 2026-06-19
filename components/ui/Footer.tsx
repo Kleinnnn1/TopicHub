@@ -5,7 +5,7 @@ export function Footer() {
 
   return (
     <footer className="border-t border-neutral-200 bg-white">
-      <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
+      <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-6">
         <p className="text-sm text-neutral-500">© {year} All rights reserved</p>
         <Link
           href="/login"
